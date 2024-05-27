@@ -33,10 +33,8 @@ M.get_clip_command = function()
     cmd_check = "pngpaste -b 2>&1"
     cmd_paste = "pngpaste '%s'"
   elseif this_os == "Windows" or this_os == "Wsl" then
-    cmd_check = "Get-Clipboard -Format Image"
-    cmd_paste = "(" .. cmd_check .. ").Save('%s', 'png')"
-    cmd_check = 'powershell.exe "' .. cmd_check .. '"'
-    cmd_paste = 'powershell.exe "' .. cmd_paste .. '"'
+    cmd_check = 'powershell.exe "(Get-Clipboard -Format Image)"'
+    cmd_paste = 'powershell.exe "(Get-Clipboard -Format Image).save(' .. "'%s'" .. ')"'
   end
   return cmd_check, cmd_paste
 end
@@ -56,14 +54,14 @@ end
 
 ---Check if clipboard contain image data
 ---See also: [Data URI scheme](https://en.wikipedia.org/wiki/Data_URI_scheme)
----@param content table #clipboard content
+---@param content string #clipboard content
 M.is_clipboard_img = function(content)
   local this_os = M.get_os()
   if this_os == "Linux" and vim.tbl_contains(content, "image/png") then
     return true
   elseif this_os == "Darwin" and string.sub(content[1], 1, 9) == "iVBORw0KG" then -- Magic png number in base64
     return true
-  elseif this_os == "Windows" or this_os == "Wsl" and next(content) ~= nil then
+  elseif this_os == "Windows" or this_os == "Wsl" and content ~= nil then
     return true
   end
   return false
@@ -147,6 +145,11 @@ M.insert_txt = function(affix, path_txt)
       vim.fn.append(current_line_num, indent)
     end
   end
+
+  -- NOTE: WSL2 displays 'tcgetpgrp failed: Not a tty'.
+  -- ex: mode redraws that screen and removes the text.
+  -- The error text is not written to current buffer.
+  vim.cmd("mode")
 end
 
 M.insert_text = M.insert_txt
